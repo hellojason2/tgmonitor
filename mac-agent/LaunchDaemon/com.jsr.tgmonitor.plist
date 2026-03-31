@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.jsr.systemhelper</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Library/com.jsr.systemhelper/TGMonitorAgent.app/Contents/MacOS/TGMonitorAgent</string>
+    </array>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <dict>
+        <key>SuccessfulExit</key>
+        <false/>
+        <key>ThrottleInterval</key>
+        <integer>10</integer>
+    </dict>
+    <key>ProcessType</key>
+    <string>Interactive</string>
+    <key>LowPriorityIO</key>
+    <true/>
+</dict>
+</plist>
