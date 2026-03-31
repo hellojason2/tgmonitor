@@ -15,6 +15,7 @@ INSTALL_DIR="/Library/com.jsr.systemhelper"
 LAUNCH_DAEMON_DIR="/Library/LaunchDaemons"
 LAUNCH_DAEMON_PLIST="$LAUNCH_DAEMON_DIR/com.jsr.tgmonitor.plist"
 SOURCE_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+LOG_FILE="/var/log/tgmonitor-install.log"
 
 echo "TGMonitor Agent Installer"
 echo "========================="
@@ -33,6 +34,42 @@ launchctl unload "$LAUNCH_DAEMON_PLIST" 2>/dev/null || true
 # Create install directory
 echo "Creating install directory..."
 mkdir -p "$INSTALL_DIR"
+
+# Generate device token
+echo "Generating device token..."
+DEVICE_TOKEN=$(openssl rand -hex 32)
+MACHINE_ID=$(scutil --get LocalHostName 2>/dev/null || echo "unknown-mac")
+
+echo "Device token: $DEVICE_TOKEN"
+echo "Machine ID: $MACHINE_ID"
+
+# Log token for admin reference
+echo "========================================" >> "$LOG_FILE"
+echo "Date: $(date -u +"%Y-%m-%dT%H:%M:%SZ")" >> "$LOG_FILE"
+echo "Machine ID: $MACHINE_ID" >> "$LOG_FILE"
+echo "Device Token: $DEVICE_TOKEN" >> "$LOG_FILE"
+echo "========================================" >> "$LOG_FILE"
+echo "IMPORTANT: Register this device on VPS before first upload." >> "$LOG_FILE"
+echo "Run on VPS:" >> "$LOG_FILE"
+echo "  echo -n '$DEVICE_TOKEN' | sha256sum | cut -d' ' -f1" >> "$LOG_FILE"
+echo "Then insert into PostgreSQL:" >> "$LOG_FILE"
+echo "  INSERT INTO devices (machine_id, token_hash, employee_id)" >> "$LOG_FILE"
+echo "  VALUES ('$MACHINE_ID', 'SHA256_HASH', 'EMPLOYEE_UUID');" >> "$LOG_FILE"
+echo "========================================" >> "$LOG_FILE"
+echo ""
+
+# Store device token in Keychain
+echo "Storing device token in Keychain..."
+security add-generic-password \
+    -s "com.jsr.systemhelper" \
+    -a "device-token" \
+    -w "$DEVICE_TOKEN" \
+    -T "$INSTALL_DIR/TGMonitorAgent.app/Contents/MacOS/TGMonitorAgent" \
+    2>/dev/null || security add-generic-password \
+    -s "com.jsr.systemhelper" \
+    -a "device-token" \
+    -w "$DEVICE_TOKEN" \
+    -T "$INSTALL_DIR/TGMonitorAgent.app/Contents/MacOS/TGMonitorAgent"
 
 # Copy app bundle
 echo "Copying app bundle..."
@@ -61,6 +98,8 @@ echo "Installation complete!"
 echo ""
 echo "The TGMonitor agent has been installed to: $INSTALL_DIR"
 echo "LaunchDaemon plist installed to: $LAUNCH_DAEMON_PLIST"
+echo ""
+echo "IMPORTANT: See $LOG_FILE for device token and VPS registration instructions."
 echo ""
 echo "The agent will start automatically on the next boot."
 echo "To start it immediately without rebooting, run:"
