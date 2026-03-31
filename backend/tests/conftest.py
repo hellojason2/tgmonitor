@@ -1,4 +1,12 @@
 import asyncio
+import os
+
+# Set env vars BEFORE importing app modules
+os.environ.setdefault("DATABASE_URL", "sqlite+aiosqlite:///:memory:")
+os.environ.setdefault("GEMINI_API_KEY", "test-key-for-unit-tests-only")
+os.environ.setdefault("API_SECRET_KEY", "test-secret-for-unit-tests-only")
+os.environ.setdefault("SCREENSHOT_DIR", "/tmp/test-screenshots")
+
 import pytest
 import pytest_asyncio
 from httpx import AsyncClient, ASGITransport
