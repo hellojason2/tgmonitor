@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   postgres:
     image: postgres:16-alpine
@@ -14,6 +12,11 @@ services:
       - ./backend/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     networks:
       - tgmonitor_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tgmonitor"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   backend:
     build:
