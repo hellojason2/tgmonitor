@@ -8,16 +8,23 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var uploadQueue: UploadQueue?
     private var networkMonitor: NetworkMonitor?
     private var localStorage: LocalStorage?
+    private var statusManager: StatusManager?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         localStorage = LocalStorage()
-        localStorage?.setupDirectories()
+        Task {
+            await localStorage?.setupDirectories()
+            try? await localStorage?.cleanupOldScreenshots()
+        }
 
+        statusManager = StatusManager()
         networkMonitor = NetworkMonitor()
         networkMonitor?.startMonitoring()
 
-        uploadQueue = UploadQueue()
-        uploadQueue?.resumePendingUploads()
+        uploadQueue = UploadQueue(storage: localStorage!, statusManager: statusManager!)
+        Task {
+            await uploadQueue?.resumePendingUploads()
+        }
 
         if !UserDefaults.standard.bool(forKey: "hasCompletedSetup") {
             showSetupWindow()
@@ -52,10 +59,20 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func startMonitoring() {
-        screenshotCapture = ScreenshotCapture(interval: 300)
+        guard let storage = localStorage, let queue = uploadQueue, let status = statusManager else { return }
+
+        screenshotCapture = ScreenshotCapture(
+            interval: 300,
+            storage: storage,
+            uploadQueue: queue,
+            statusManager: status
+        )
+        screenshotCapture?.onPermissionDenied = { [weak self] in
+            self?.menuBarController?.updateStatus(.permissionRequired)
+        }
         screenshotCapture?.start()
 
-        menuBarController = MenuBarController()
+        menuBarController = MenuBarController(statusManager: status)
         menuBarController?.onDisableRequested = { [weak self] in
             self?.handleDisableRequest()
         }

@@ -1,14 +1,16 @@
 import SwiftUI
+import Combine
 
 enum MenuBarStatus {
     case active
     case disabled
     case offline
-    case error
+    case error(String)
+    case permissionRequired
 }
 
 struct MenuBarView: View {
-    @Binding var status: MenuBarStatus
+    @ObservedObject var statusManager: StatusManager
     var onDisableRequested: () -> Void
     var onQuitRequested: () -> Void
 
@@ -42,20 +44,22 @@ struct MenuBarView: View {
     }
 
     private var statusColor: Color {
-        switch status {
+        switch statusManager.currentStatus {
         case .active: return .green
         case .disabled: return .yellow
         case .offline: return .yellow
         case .error: return .red
+        case .permissionRequired: return .orange
         }
     }
 
     private var statusText: String {
-        switch status {
+        switch statusManager.currentStatus {
         case .active: return "Active"
         case .disabled: return "Disabled"
         case .offline: return "Offline"
         case .error: return "Error"
+        case .permissionRequired: return "Permission Required"
         }
     }
 }
@@ -97,21 +101,44 @@ class MenuBarController: NSObject {
     private var statusItem: NSStatusItem?
     var onDisableRequested: (() -> Void)?
     var onQuitRequested: (() -> Void)?
-    private var currentStatus: MenuBarStatus = .active
+    private let statusManager: StatusManager
+    private var cancellables = Set<AnyCancellable>()
 
-    override init() {
+    init(statusManager: StatusManager) {
+        self.statusManager = statusManager
         super.init()
         setupStatusItem()
+        observeStatus()
     }
 
     private func setupStatusItem() {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
 
-        if let button = statusItem?.button {
+        if statusItem?.button != nil {
             updateStatusImage()
         }
 
         statusItem?.menu = createMenu()
+    }
+
+    private func observeStatus() {
+        statusManager.$currentStatus
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] status in
+                guard let self = self else { return }
+                self.updateStatus(self.convertStatus(status))
+            }
+            .store(in: &cancellables)
+    }
+
+    private func convertStatus(_ status: StatusManager.Status) -> MenuBarStatus {
+        switch status {
+        case .active: return .active
+        case .offline: return .offline
+        case .error: return .error("Error")
+        case .permissionRequired: return .permissionRequired
+        case .disabled: return .disabled
+        }
     }
 
     private func createMenu() -> NSMenu {
@@ -166,38 +193,36 @@ class MenuBarController: NSObject {
     }
 
     func updateStatus(_ status: MenuBarStatus) {
-        currentStatus = status
         updateStatusImage()
         if let menu = statusItem?.menu {
-            menu.items[2].title = "Status: \(statusText(for: status))"
+            let title: String
+            switch status {
+            case .active: title = "Active"
+            case .disabled: title = "Disabled"
+            case .offline: title = "Offline"
+            case .error: title = "Error"
+            case .permissionRequired: title = "Permission Required"
+            }
+            menu.items[2].title = "Status: \(title)"
         }
     }
 
     private func updateStatusImage() {
         if let button = statusItem?.button {
             let color: NSColor
-            switch currentStatus {
+            switch statusManager.currentStatus {
             case .active: color = .systemGreen
             case .disabled: color = .systemYellow
             case .offline: color = .systemYellow
             case .error: color = .systemRed
+            case .permissionRequired: color = .systemOrange
             }
-
             let image = NSImage(size: NSSize(width: 10, height: 10))
             image.lockFocus()
             color.setFill()
             NSBezierPath(ovalIn: NSRect(x: 0, y: 0, width: 10, height: 10)).fill()
             image.unlockFocus()
             button.image = image
-        }
-    }
-
-    private func statusText(for status: MenuBarStatus) -> String {
-        switch status {
-        case .active: return "Active"
-        case .disabled: return "Disabled"
-        case .offline: return "Offline"
-        case .error: return "Error"
         }
     }
 }
