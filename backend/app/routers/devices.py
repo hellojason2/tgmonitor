@@ -69,7 +69,7 @@ async def register_device(req: RegisterRequest, db: AsyncSession = Depends(get_d
     device = Device(
         id=uuid4(),
         employee_id=employee.id,
-        name=req.name,
+        machine_id=req.name,
         token_hash=token_hash,
     )
     db.add(device)
