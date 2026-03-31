@@ -12,7 +12,12 @@ actor UploadQueue {
     private let session: URLSession
 
     private var vpsEndpoint: String {
-        return "https://72.62.148.50"
+        return "http://72.62.148.50:8000"
+    }
+
+    /// Admin password used for device enrollment — must match server ADMIN_PASSWORD
+    private var adminPassword: String {
+        return "jsr_monitor_2026"
     }
 
     private var employeeId: String {
@@ -80,13 +85,21 @@ actor UploadQueue {
     }
 
     private func upload(_ screenshot: Screenshot) async throws {
-        guard let token = KeychainService.getDeviceToken() else {
-            throw UploadError.noToken
+        // Auto-register device if no token exists
+        var token = KeychainService.getDeviceToken()
+        if token == nil {
+            print("[UploadQueue] No device token found — attempting auto-registration...")
+            guard let registration = try? await registerDevice() else {
+                throw UploadError.noToken
+            }
+            try KeychainService.setDeviceToken(registration.token)
+            token = registration.token
+            print("[UploadQueue] Device registered with ID: \(registration.deviceId)")
         }
 
         var request = URLRequest(url: URL(string: "\(vpsEndpoint)/api/v1/screenshots")!)
         request.httpMethod = "POST"
-        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("Bearer \(token ?? "")", forHTTPHeaderField: "Authorization")
 
         let boundary = UUID().uuidString
         request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
@@ -144,6 +157,32 @@ actor UploadQueue {
                 }
             }
         }
+    }
+
+    private struct DeviceRegistration: Codable {
+        let deviceId: String
+        let token: String
+        let employeeId: String
+    }
+
+    private func registerDevice() async throws -> DeviceRegistration {
+        let machineName = Host.current().localizedName ?? "unknown-mac"
+
+        var request = URLRequest(url: URL(string: "\(vpsEndpoint)/api/v1/devices/register")!)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        let body = ["name": machineName, "admin_password": adminPassword]
+        request.httpBody = try JSONEncoder().encode(body)
+
+        let (data, response) = try await session.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse,
+              (200...299).contains(httpResponse.statusCode) else {
+            throw UploadError.serverRejected
+        }
+
+        return try JSONDecoder().decode(DeviceRegistration.self, from: data)
     }
 }
 
