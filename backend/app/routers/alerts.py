@@ -3,6 +3,7 @@ Alert and journal API endpoints.
 """
 
 from datetime import datetime, date
+from typing import Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -18,8 +19,8 @@ router = APIRouter(prefix="/api/v1", tags=["alerts"])
 
 @router.get("/alerts", response_model=list[AlertSchema])
 async def list_alerts(
-    employee_id: UUID | None = None,
-    acknowledged: bool | None = None,
+    employee_id: Optional[UUID] = None,
+    acknowledged: Optional[bool] = None,
     limit: int = Query(default=50, le=200),
     db: AsyncSession = Depends(get_db),
 ):
@@ -63,7 +64,7 @@ async def acknowledge_alert(alert_id: UUID, db: AsyncSession = Depends(get_db)):
 
 @router.post("/alerts/acknowledge-all")
 async def acknowledge_all_alerts(
-    employee_id: UUID | None = None, db: AsyncSession = Depends(get_db)
+    employee_id: Optional[UUID] = None, db: AsyncSession = Depends(get_db)
 ):
     """Acknowledge all alerts, optionally for a specific employee."""
     query = update(Alert).where(Alert.acknowledged == False)

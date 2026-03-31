@@ -3,6 +3,7 @@ Daily journal API endpoints.
 """
 
 from datetime import date
+from typing import Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -18,9 +19,9 @@ router = APIRouter(prefix="/api/v1", tags=["journals"])
 
 @router.get("/journals", response_model=list[JournalSchema])
 async def list_journals(
-    employee_id: UUID | None = None,
-    start_date: date | None = None,
-    end_date: date | None = None,
+    employee_id: Optional[UUID] = None,
+    start_date: Optional[date] = None,
+    end_date: Optional[date] = None,
     limit: int = Query(default=30, le=180),
     db: AsyncSession = Depends(get_db),
 ):

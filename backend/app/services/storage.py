@@ -1,6 +1,7 @@
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Optional
 from PIL import Image
 import io
 
@@ -11,8 +12,8 @@ async def save_screenshot(
     file_content: bytes,
     employee_id: str,
     captured_at: datetime,
-    app_name: str | None,
-    window_title: str | None,
+    app_name: Optional[str],
+    window_title: Optional[str],
     settings: Settings,
 ) -> tuple[str, str, int]:
     """

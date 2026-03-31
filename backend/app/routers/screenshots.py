@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from typing import Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
@@ -21,8 +22,8 @@ async def upload_screenshot(
     file: UploadFile = File(...),
     employee_id: str = Form(...),
     captured_at: datetime = Form(...),
-    app_name: str | None = Form(None),
-    window_title: str | None = Form(None),
+    app_name: Optional[str] = Form(None),
+    window_title: Optional[str] = Form(None),
     db: AsyncSession = Depends(get_db),
     settings: Settings = Depends(lambda: Settings()),
 ):

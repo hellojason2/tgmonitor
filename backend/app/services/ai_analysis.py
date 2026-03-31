@@ -8,6 +8,7 @@ import re
 import io
 import logging
 from pathlib import Path
+from typing import Optional
 
 import google.generativeai as genai
 from PIL import Image
@@ -34,7 +35,7 @@ RISK_KEYWORDS = {
 }
 
 
-def build_prompt(app_name: str | None, window_title: str | None) -> str:
+def build_prompt(app_name: Optional[str], window_title: Optional[str]) -> str:
     return (
         "You are an employee activity monitor analyzing a screenshot. "
         "Describe what the employee is doing in ONE SHORT SENTENCE. "
@@ -57,7 +58,7 @@ def calculate_risk_score(caption: str) -> str:
     return "low"
 
 
-def determine_alert_type(caption: str, risk_score: str) -> str | None:
+def determine_alert_type(caption: str, risk_score: str) -> Optional[str]:
     """Determine alert type from caption if risk is high."""
     if risk_score != "high":
         return None
@@ -76,8 +77,8 @@ def determine_alert_type(caption: str, risk_score: str) -> str | None:
 
 def analyze_screenshot(
     screenshot_path: Path,
-    app_name: str | None,
-    window_title: str | None,
+    app_name: Optional[str],
+    window_title: Optional[str],
     settings: Settings,
 ) -> tuple[str, str, int, float]:
     """

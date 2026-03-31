@@ -1,6 +1,6 @@
 from datetime import datetime, date
 from uuid import UUID
-from typing import Literal
+from typing import Optional, Literal
 from pydantic import BaseModel, ConfigDict
 
 
@@ -19,19 +19,19 @@ class ScreenshotRecord(BaseModel):
     captured_at: datetime
     received_at: datetime
     file_path: str
-    thumb_path: str | None
-    file_size_bytes: int | None
-    app_name: str | None
-    window_title: str | None
+    thumb_path: Optional[str]
+    file_size_bytes: Optional[int]
+    app_name: Optional[str]
+    window_title: Optional[str]
     analysis_status: str
-    analyzed_at: datetime | None
+    analyzed_at: Optional[datetime]
 
     model_config = ConfigDict(from_attributes=True)
 
 
 class TokenPayload(BaseModel):
     sub: str  # machine_id
-    exp: int | None = None
+    exp: Optional[int] = None
 
 
 class HealthResponse(BaseModel):
@@ -50,8 +50,8 @@ class AnalysisResult(BaseModel):
     caption: str
     risk_score: Literal["low", "medium", "high"]
     model_used: str
-    tokens_used: int | None
-    api_cost_usd: float | None
+    tokens_used: Optional[int]
+    api_cost_usd: Optional[float]
     processed_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
@@ -92,11 +92,11 @@ class ScreenshotWithAnalysis(BaseModel):
     employee_id: UUID
     captured_at: datetime
     file_path: str
-    thumb_path: str | None
-    app_name: str | None
-    window_title: str | None
+    thumb_path: Optional[str]
+    app_name: Optional[str]
+    window_title: Optional[str]
     analysis_status: str
-    analyzed_at: datetime | None
-    analysis: AnalysisResult | None
+    analyzed_at: Optional[datetime]
+    analysis: Optional[AnalysisResult]
 
     model_config = ConfigDict(from_attributes=True)
