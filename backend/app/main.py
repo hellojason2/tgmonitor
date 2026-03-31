@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import Settings
 from app.database import get_db, async_session_factory
 from app.models import Screenshot
-from app.routers import screenshots, alerts, journals, auth
+from app.routers import screenshots, alerts, journals, auth, employees
 from app.schemas import HealthResponse, ReadyResponse
 from app.services.analysis_worker import (
     analysis_loop,
@@ -139,6 +139,7 @@ app.include_router(screenshots.router)
 app.include_router(alerts.router)
 app.include_router(journals.router)
 app.include_router(auth.router)
+app.include_router(employees.router)
 
 
 @app.get("/api/v1/health", response_model=HealthResponse, tags=["health"])
