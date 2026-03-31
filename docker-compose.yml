@@ -28,6 +28,7 @@ services:
       DATABASE_URL: "postgresql+asyncpg://tgmonitor:${POSTGRES_PASSWORD}@postgres:5432/tgmonitor"
       GEMINI_API_KEY: "${GEMINI_API_KEY}"
       API_SECRET_KEY: "${API_SECRET_KEY}"
+      ADMIN_PASSWORD: "${ADMIN_PASSWORD}"
       SCREENSHOT_DIR: /var/data/screenshots
     volumes:
       - ./data/screenshots:/var/data/screenshots
